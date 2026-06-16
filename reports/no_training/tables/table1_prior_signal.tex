@@ -1,0 +1,21 @@
+\begin{table}[H]
+\centering
+\caption{How closely does the learned prior attributor match posterior helpfulness?}
+\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lll}
+\toprule
+Check & Estimate & Read \\
+\midrule
+Item ranking & test rho 0.067 & weak item faithfulness \\
+Within-record ranking & test mean rho 0.084 & weak but positive \\
+Mass on positive news & test mean 0.505 & useful, not oracle \\
+Top item nonzero & test 61.9\% & often relevant \\
+Exact top match & test 16.2\% & low recovery \\
+Domain averages & domain Spearman 0.532 & stronger aggregated \\
+\bottomrule
+\end{tabular}
+}
+\caption*{\footnotesize q is the released prior-attributor score; posterior-positive means the hindsight/posterior score s is greater than zero. Test estimates use held-out Kalshi records.}
+\label{tab:prior-signal}
+\end{table}

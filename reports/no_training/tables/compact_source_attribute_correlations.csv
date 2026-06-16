@@ -1,0 +1,11 @@
+predictor,outcome,spearman
+Tranco popularity,Posterior helpfulness,0.3529006095126945
+Tranco popularity,Prior attention,0.3596434155365609
+MBFC traffic,Posterior helpfulness,0.3564604236328749
+MBFC traffic,Prior attention,0.4130548970817396
+MBFC credibility,Posterior helpfulness,-0.2076160059343406
+MBFC credibility,Prior attention,-0.1517039760966226
+MBFC factual reporting,Posterior helpfulness,-0.2563599242793696
+MBFC factual reporting,Prior attention,-0.2195419717470887
+Iffy flagged,Posterior helpfulness,0.0995459269292058
+Iffy flagged,Prior attention,-0.0392099297772524

@@ -1,0 +1,637 @@
+{
+  "records": 3899,
+  "candidate_articles": 232647,
+  "positive_records": 1513,
+  "positive_record_rate": 0.3880482174916645,
+  "mean_news_count": 59.66837650679661,
+  "mean_prior_alignment_positive_records": 0.5850919092483831,
+  "mean_prior_waste_positive_records": 0.414908090751617,
+  "prior_top_positive_rate": 0.7019167217448777,
+  "prior_exact_top_overlap_rate": 0.2075346992729676,
+  "test_positive_records": 339,
+  "test_mean_prior_alignment_positive_records": 0.5054953573387766,
+  "test_prior_top_positive_rate": 0.6194690265486725,
+  "test_prior_exact_top_overlap_rate": 0.16224188790560473,
+  "source_panel": {
+    "splits": {
+      "train": {
+        "records": 2779,
+        "records_with_positive_posterior": 1174
+      },
+      "test": {
+        "records": 1120,
+        "records_with_positive_posterior": 339
+      }
+    },
+    "records": 3899,
+    "candidate_articles": 232647,
+    "records_with_positive_posterior": 1513,
+    "domains": 388,
+    "sources": 390,
+    "mbfc_matched_domains": 274,
+    "mbfc_matched_articles": 181600,
+    "iffy_flagged_domains": 10,
+    "iffy_flagged_articles": 10944,
+    "tranco_matched_domains": 379,
+    "tranco_matched_articles": 231807,
+    "top_sources_by_candidate_count": [
+      [
+        "New York Post",
+        7739
+      ],
+      [
+        "Cable News Network",
+        5712
+      ],
+      [
+        "Newsweek",
+        5411
+      ],
+      [
+        "CBS Sports",
+        4862
+      ],
+      [
+        "Washington Examiner",
+        4353
+      ],
+      [
+        "The Associated Press",
+        4233
+      ],
+      [
+        "Screen Rant",
+        3857
+      ],
+      [
+        "CBS News",
+        3771
+      ],
+      [
+        "CNBC",
+        3596
+      ],
+      [
+        "WDIV ClickOnDetroit",
+        3577
+      ],
+      [
+        "Reuters",
+        3550
+      ],
+      [
+        "Essentially Sports",
+        3369
+      ],
+      [
+        "NBC News",
+        3213
+      ],
+      [
+        "Newsmax",
+        3085
+      ],
+      [
+        "Markets Insider",
+        2978
+      ],
+      [
+        "Fox News",
+        2848
+      ],
+      [
+        "Variety",
+        2748
+      ],
+      [
+        "The Boston Globe",
+        2701
+      ],
+      [
+        "Billboard",
+        2700
+      ],
+      [
+        "Breitbart News Network",
+        2604
+      ]
+    ],
+    "top_domains_by_candidate_count": [
+      [
+        "nypost.com",
+        7739
+      ],
+      [
+        "cnn.com",
+        5725
+      ],
+      [
+        "newsweek.com",
+        5411
+      ],
+      [
+        "cbssports.com",
+        4862
+      ],
+      [
+        "washingtonexaminer.com",
+        4353
+      ],
+      [
+        "apnews.com",
+        4233
+      ],
+      [
+        "screenrant.com",
+        3857
+      ],
+      [
+        "cbsnews.com",
+        3771
+      ],
+      [
+        "businessinsider.com",
+        3716
+      ],
+      [
+        "cnbc.com",
+        3596
+      ],
+      [
+        "clickondetroit.com",
+        3577
+      ],
+      [
+        "reuters.com",
+        3550
+      ],
+      [
+        "essentiallysports.com",
+        3369
+      ],
+      [
+        "nbcnews.com",
+        3213
+      ],
+      [
+        "newsmax.com",
+        3085
+      ],
+      [
+        "foxnews.com",
+        2848
+      ],
+      [
+        "variety.com",
+        2748
+      ],
+      [
+        "bostonglobe.com",
+        2701
+      ],
+      [
+        "billboard.com",
+        2700
+      ],
+      [
+        "breitbart.com",
+        2604
+      ]
+    ],
+    "mbfc_source_domains": 9776,
+    "iffy_domains": 2040,
+    "tranco_domains": 1000000,
+    "min_domain_articles_for_rankings": 20,
+    "outputs": [
+      "category_domain_panel.csv",
+      "domain_correlations.csv",
+      "domain_panel.csv",
+      "external_attribute_group_summary.csv",
+      "least_helpful_domains.csv",
+      "single_predictor_slopes.csv",
+      "source_domain_panel.csv",
+      "summary.json",
+      "top_domains_by_category.csv",
+      "top_domains_by_posterior_score.csv",
+      "top_domains_by_prior_weight.csv",
+      "top_domains_by_wasted_prior.csv"
+    ]
+  },
+  "random_proxy": {
+    "dataset": "https://huggingface.co/datasets/ulab-ai/swm-bench/resolve/main/Qwen3.5-397B-attributed-data/test_kalshi.jsonl",
+    "records": 760,
+    "records_with_news": 760,
+    "records_with_positive_posterior": 142,
+    "records_with_top_score_ge_threshold": 140,
+    "high_threshold": 0.5,
+    "random_top1_nonzero_hit_rate": 0.05,
+    "random_top1_nonzero_hit_rate_given_positive": 0.2676056338028169,
+    "random_top1_exact_top_hit_rate": 0.3539473684210526,
+    "random_top1_exact_top_hit_rate_given_high": 0.15,
+    "random_top1_zero_miss_given_high_count": 102,
+    "random_top1_zero_miss_given_high_rate": 0.7285714285714285,
+    "mean_top_score": 0.1581578947368421,
+    "mean_random_score": 0.042986842105263164,
+    "mean_total_nonnull_pi": 0.1683866096935778,
+    "mean_random_pi": 0.0212395529720618,
+    "set_size_recall": {
+      "1": {
+        "random_mean": 0.8357175297227867,
+        "random_p10": 0.061,
+        "random_p50": 1.0,
+        "top_mean": 0.9182628396175812,
+        "top_p50": 1.0
+      },
+      "5": {
+        "random_mean": 0.88916090577921,
+        "random_p10": 0.303,
+        "random_p50": 1.0,
+        "top_mean": 0.9832411401886548,
+        "top_p50": 1.0
+      },
+      "10": {
+        "random_mean": 0.9278156600252996,
+        "random_p10": 0.5951735388673647,
+        "random_p50": 1.0,
+        "top_mean": 0.9975306404678986,
+        "top_p50": 1.0
+      },
+      "20": {
+        "random_mean": 0.9712335855424568,
+        "random_p10": 1.0,
+        "random_p50": 1.0,
+        "top_mean": 1.0,
+        "top_p50": 1.0
+      },
+      "30": {
+        "random_mean": 0.9893069982262632,
+        "random_p10": 1.0,
+        "random_p50": 1.0,
+        "top_mean": 1.0,
+        "top_p50": 1.0
+      }
+    },
+    "set_size_recall_positive_only": {
+      "1": {
+        "random_mean": 0.1207417083754776,
+        "random_p10": 0.02266666666666667,
+        "random_p50": 0.05796673864719029,
+        "top_mean": 0.5625335078124061,
+        "top_p50": 0.5
+      },
+      "5": {
+        "random_mean": 0.4067766788183074,
+        "random_p10": 0.11733333333333335,
+        "random_p50": 0.28325,
+        "top_mean": 0.9103046939674485,
+        "top_p50": 1.0
+      },
+      "10": {
+        "random_mean": 0.6136612790086453,
+        "random_p10": 0.23600000000000002,
+        "random_p50": 0.584,
+        "top_mean": 0.9867837095464996,
+        "top_p50": 1.0
+      },
+      "20": {
+        "random_mean": 0.8460389085370924,
+        "random_p10": 0.4873333333333334,
+        "random_p50": 1.0,
+        "top_mean": 1.0,
+        "top_p50": 1.0
+      },
+      "30": {
+        "random_mean": 0.9427698496616904,
+        "random_p10": 0.7413333333333334,
+        "random_p50": 1.0,
+        "top_mean": 1.0,
+        "top_p50": 1.0
+      }
+    },
+    "top_random_zero_miss_sources": [
+      [
+        "Newsmax",
+        9
+      ],
+      [
+        "New York Post",
+        7
+      ],
+      [
+        "GamesRadar+",
+        4
+      ],
+      [
+        "Barchart",
+        4
+      ],
+      [
+        "Fox News",
+        4
+      ],
+      [
+        "The Hollywood Reporter",
+        3
+      ],
+      [
+        "People.com",
+        3
+      ],
+      [
+        "Screen Rant",
+        3
+      ],
+      [
+        "Reuters",
+        3
+      ],
+      [
+        "Men's Journal",
+        2
+      ],
+      [
+        "USA TODAY",
+        2
+      ],
+      [
+        "Washington Examiner",
+        2
+      ],
+      [
+        "Newsweek",
+        2
+      ],
+      [
+        "The Daily Beast",
+        2
+      ],
+      [
+        "Seeking Alpha",
+        2
+      ],
+      [
+        "Forbes",
+        2
+      ],
+      [
+        "Chicago Tribune",
+        2
+      ],
+      [
+        "Investing.com",
+        2
+      ],
+      [
+        "The Atlanta Journal-Constitution",
+        2
+      ],
+      [
+        "NBC News",
+        2
+      ]
+    ],
+    "top_random_zero_miss_categories": [
+      [
+        "Politics",
+        36
+      ],
+      [
+        "Entertainment",
+        31
+      ],
+      [
+        "Financials",
+        12
+      ],
+      [
+        "Elections",
+        10
+      ],
+      [
+        "Economics",
+        4
+      ],
+      [
+        "Companies",
+        2
+      ],
+      [
+        "Mentions",
+        2
+      ],
+      [
+        "Science and Technology",
+        2
+      ],
+      [
+        "World",
+        1
+      ],
+      [
+        "Health",
+        1
+      ],
+      [
+        "Crypto",
+        1
+      ]
+    ],
+    "top_random_selected_sources": [
+      [
+        "Screen Rant",
+        39
+      ],
+      [
+        "New York Post",
+        30
+      ],
+      [
+        "Reuters",
+        29
+      ],
+      [
+        "Benzinga",
+        26
+      ],
+      [
+        "Newsmax",
+        22
+      ],
+      [
+        "Forbes",
+        19
+      ],
+      [
+        "Fox News",
+        16
+      ],
+      [
+        "People.com",
+        16
+      ],
+      [
+        "Bloomberg",
+        15
+      ],
+      [
+        "Newsweek",
+        15
+      ],
+      [
+        "Barchart",
+        15
+      ],
+      [
+        "GamesRadar+",
+        14
+      ],
+      [
+        "EUROPE SAYS",
+        13
+      ],
+      [
+        "Us Weekly",
+        13
+      ],
+      [
+        "The Hollywood Reporter",
+        13
+      ],
+      [
+        "HotNewHipHop",
+        12
+      ],
+      [
+        "Variety",
+        12
+      ],
+      [
+        "CinemaBlend",
+        11
+      ],
+      [
+        "Billboard",
+        11
+      ],
+      [
+        "International Business Times",
+        11
+      ]
+    ],
+    "top_random_high_sources": [
+      [
+        "Bloomberg",
+        4
+      ],
+      [
+        "Billboard",
+        3
+      ],
+      [
+        "International Business Times",
+        3
+      ],
+      [
+        "Reuters",
+        2
+      ],
+      [
+        "New York Post",
+        2
+      ],
+      [
+        "UPI News",
+        2
+      ],
+      [
+        "Newsweek",
+        2
+      ],
+      [
+        "Charleston Post and Courier",
+        1
+      ],
+      [
+        "Breitbart News Network",
+        1
+      ],
+      [
+        "Polygon",
+        1
+      ],
+      [
+        "ABC News",
+        1
+      ],
+      [
+        "Los Angeles Times",
+        1
+      ],
+      [
+        "HotNewHipHop",
+        1
+      ],
+      [
+        "Scientific American",
+        1
+      ],
+      [
+        "NBC10 Boston",
+        1
+      ],
+      [
+        "Washington Examiner",
+        1
+      ],
+      [
+        "WJLA",
+        1
+      ],
+      [
+        "Newsmax",
+        1
+      ],
+      [
+        "TechCrunch",
+        1
+      ],
+      [
+        "CoinDesk",
+        1
+      ]
+    ]
+  },
+  "by_split": [
+    {
+      "split": "test",
+      "records": 1120,
+      "positive_records": 339,
+      "mean_news_count": 69.09821428571429,
+      "mean_prior_alignment": 0.15439232625250582
+    },
+    {
+      "split": "train",
+      "records": 2779,
+      "positive_records": 1174,
+      "mean_news_count": 55.86793810723282,
+      "mean_prior_alignment": 0.26090241185973917
+    }
+  ],
+  "tranco_attention_posterior_spearman": 0.3529006095126945,
+  "tranco_attention_prior_spearman": 0.3596434155365609,
+  "mbfc_traffic_posterior_spearman": 0.3564604236328749,
+  "mbfc_credibility_posterior_spearman": -0.2076160059343406,
+  "mbfc_credibility_prior_spearman": -0.1517039760966226,
+  "item_positive_record_spearman": 0.08611261447273877,
+  "test_item_positive_record_spearman": 0.0668489755726054,
+  "within_record_spearman_mean": 0.15319068057251634,
+  "within_record_spearman_median": 0.13241498008069777,
+  "test_within_record_spearman_mean": 0.0842665041726103,
+  "test_within_record_spearman_median": 0.08539671157851392,
+  "domain_prior_posterior_spearman": 0.5318861782346131,
+  "domain_prior_posterior_pearson": 0.4384144828042583,
+  "figures": [
+    "reports/no_training/figures/fig1_domain_prior_vs_posterior.png",
+    "reports/no_training/figures/fig2_source_attribute_correlations.png"
+  ]
+}

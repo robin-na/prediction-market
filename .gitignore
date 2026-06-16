@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Local analysis inputs and downloaded third-party datasets
+data/
+
+# Local render/cache outputs
+tmp/
+
+# macOS
+.DS_Store

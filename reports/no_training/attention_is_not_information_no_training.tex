@@ -1,0 +1,88 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.92in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{xcolor}
+\graphicspath{{figures/}}
+\hypersetup{colorlinks=true, linkcolor=blue!45!black, urlcolor=blue!45!black, citecolor=blue!45!black}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlength{\emergencystretch}{3em}
+\captionsetup{font=small, labelfont=bf}
+\input{numbers.tex}
+\title{Attention Proxies in SWM Kalshi News Attributions}
+\author{Prediction-market exploratory analysis}
+\date{June 16, 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+This memo asks whether external source attributes help identify news that is useful for prediction-market belief updates in the released Social World Model (SWM) Kalshi data. The main result is source-level: popularity and traffic are positive correlates of posterior helpfulness, while raw credibility labels are not. Tranco attention correlates with posterior helpfulness at Spearman \TrancoPosteriorSpearman, and MBFC traffic is similar (\MBFCTrafficPosteriorSpearman). MBFC credibility is negative in the unadjusted domain panel (\MBFCCredibilityPosteriorSpearman), a descriptive pattern that is likely confounded by source and category mix. A second diagnostic explains why source-level patterns should not be read as item-level explanations: on held-out Kalshi records, item-level prior attention and posterior helpfulness have Spearman correlation only \TestItemPositiveRecordSpearman\ among records with any posterior-positive news.
+\end{abstract}
+\section{Objective and Short Answer}
+The broader project asks whether prediction-market rationales that attract attention are also the rationales that add predictive information. The SWM release does not contain community rationales or comment engagement. It does contain candidate news, learned prior-attributor scores, and hindsight/posterior attribution scores. This report therefore tests the closest available source-level analogue.
+\begin{itemize}
+\item Popularity is the clearest external correlate. Tranco attention and MBFC traffic are positively associated with posterior helpfulness and prior attention.
+\item Credibility is not positively associated with helpfulness in the raw panel. MBFC credibility is negative for both posterior helpfulness and prior attention, but this is descriptive and likely confounded.
+\item The SWM prior attributor helps interpret these source patterns but is not a faithful item-level explanation. In held-out positive records, exact top-item recovery is only \TestPriorExactTopRate.
+\end{itemize}
+\section{What the SWM Scores Mean}
+The SWM paper models prediction-market prices as social beliefs and news articles as possible events that move those beliefs. For each market transition, the paper uses two attribution models. A posterior attributor $Q_\phi$ sees the realized next state and assigns hindsight responsibility to candidate news. A prior attributor $P_\eta$ sees only the current market context and candidate news, and is trained to approximate the posterior weights. In the released files used here, $s_{ri}$ is the posterior/hindsight score for news item $i$ in record $r$, and $q_{ri}$ is the prior-attributor score for that same item.
+\begin{align}
+q_{ri} &= P_\eta(Z_r=i \mid s_r,E_r),\\
+H_d &= \frac{1}{N_d}\sum_{(r,i):d_{ri}=d}s_{ri},\qquad
+A_d = \frac{1}{N_d}\sum_{(r,i):d_{ri}=d}q_{ri}.
+\end{align}
+$H_d$ is a domain's average hindsight helpfulness, and $A_d$ is the average learned prior attention assigned to that domain. The analysis uses \MatchedKalshiRecords\ matched Kalshi records and \CandidateNewsItems\ candidate news items. \PositivePosteriorRecords\ records (\PositivePosteriorRate) have at least one positive posterior attribution. We join article domains to Tranco popularity ranks, MBFC-derived traffic and credibility fields, and Iffy flags.
+\section{Finding 1: Popularity Is Clearer Than Credibility}
+External source attributes add a second distinction. Popularity measures are positive correlates of both posterior helpfulness and prior attention: Tranco attention has Spearman \TrancoPosteriorSpearman\ with posterior helpfulness and \TrancoPriorSpearman\ with prior attention. MBFC traffic is similar for posterior helpfulness (\MBFCTrafficPosteriorSpearman). By contrast, MBFC credibility is negative in the raw domain panel (\MBFCCredibilityPosteriorSpearman\ with posterior helpfulness and \MBFCCredibilityPriorSpearman\ with prior attention). This does not mean credibility causes lower usefulness. The domain panel is confounded by category mix, source mix, and what kinds of events happened to move Kalshi prices in the release.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\linewidth]{fig2_source_attribute_correlations.png}
+\caption{Bars are unadjusted Spearman correlations across source domains. Positive values mean domains higher on the attribute also have higher average posterior helpfulness or prior attention. Popularity and traffic are positive; MBFC credibility and factual-reporting labels are negative in this raw panel. These are descriptive correlations, not causal estimates.}
+\label{fig:source-correlations}
+\end{figure}
+\input{tables/table2_source_correlations.tex}
+\section{Finding 2: Source-Level Attention and Helpfulness Move Together}
+The external-source result is consistent with the model's own source-level behavior. Among source domains with at least 20 candidate articles, mean prior attention $A_d$ and mean posterior helpfulness $H_d$ have Spearman correlation \DomainPriorPosteriorSpearman\ (Pearson \DomainPriorPosteriorPearson). In other words, domains that receive more learned attention also tend to be domains whose articles receive more hindsight attribution. This is a source-level association, not proof that popularity or credibility caused the market move.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\linewidth]{fig1_domain_prior_vs_posterior.png}
+\caption{Each dot is a source domain with at least 20 candidate news articles. The horizontal axis is the domain's mean prior-attributor weight $A_d$; the vertical axis is its mean posterior helpfulness $H_d$. The positive trend shows that source-level averages line up, but it does not show causal influence or faithful item-level explanation.}
+\label{fig:domain-prior-posterior}
+\end{figure}
+\section{Finding 3: Source Patterns Are Not Item-Level Explanations}
+The source-level correlations are easier to interpret after checking the item-level attribution behavior. Because $P_\eta$ is trained to approximate posterior attributions, some relationship between $q_{ri}$ and $s_{ri}$ is expected. At the candidate-news level it is weak: among held-out records with any posterior-positive news, the item-level Spearman correlation between $q_{ri}$ and $s_{ri}$ is \TestItemPositiveRecordSpearman. The prior selects useful candidates more often than chance, but exact recovery of the hindsight top item remains low at \TestPriorExactTopRate.
+\input{tables/table1_prior_signal.tex}
+\section{Interpretation}
+The results support a careful version of the attention-is-not-information claim. Source popularity is a useful predictor of both learned attention and hindsight helpfulness in this release; credibility labels are not. But these are source-level regularities, not causal estimates and not faithful explanations of which exact article mattered. A system can learn where useful information often comes from without reliably explaining which particular item drove a belief update.
+\section{What This Does Not Answer}
+This report does not establish that a source caused a market move. It also does not test forecast-community rationales, likes, comments, author reputation, or market microstructure. Those require a Manifold- or Metaculus-style dataset with written rationales, engagement metrics, timestamps, price movement around each rationale, and final resolution. The SWM news analysis is best read as a reproducible baseline for that later rationale-level design.
+\clearpage
+\appendix
+\section{Provenance and Reproducibility}
+The report was generated without new LLM calls. The two analysis scripts were:
+\begin{quote}
+\small\texttt{scripts/build\_source\_attribute\_panel.py}\\
+\small\texttt{scripts/generate\_no\_training\_report.py}
+\end{quote}
+The latter compiles this TeX source with the bundled Tectonic engine. The bundle includes this TeX file, a rendered PDF, figures, CSV tables, generated TeX tables, numeric macros, a Markdown report, and provenance JSON.
+\section{Known Limits}
+No new LLM training or inference was run. The released Kalshi data contain candidate news, not forecast-community rationales. The posterior attribution scores are hindsight labels and should not be interpreted as formal causal proof. Actual random-news forecast harm cannot be scored without unreleased prediction outputs or a rerun of the trained world model; the available no-training proxy found a \RandomTopOneZeroMissRate\ random top-one zero-miss rate among high-attribution records.
+\section{References}
+\begin{itemize}
+\item Yu et al. (2026), \textit{Building Social World Models with Large Language Models}: \url{https://arxiv.org/pdf/2606.11482}
+\item SWM-Bench dataset: \url{https://huggingface.co/datasets/ulab-ai/swm-bench}
+\item Social World Model code: \url{https://github.com/ulab-uiuc/social-world-model}
+\item Tranco: \url{https://tranco-list.eu/}
+\item Iffy Index: \url{https://iffy.news/index/}
+\item MBFC extension data: \url{https://github.com/drmikecrowe/mbfcext/}
+\end{itemize}
+\end{document}
