@@ -186,3 +186,6 @@ Build a Manifold-first rationale dataset:
 
 This would directly test the Robin-tab hypothesis rather than the source-level
 news analogue in the current report.
+
+Related mechanism-design papers on rationales, evidence submission, and
+self-resolving markets are summarized in `docs/evidence_explanations_related_work.md`.

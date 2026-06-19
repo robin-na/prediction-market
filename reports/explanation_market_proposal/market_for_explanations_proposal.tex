@@ -1,0 +1,209 @@
+\documentclass[11pt]{article}
+\usepackage[margin=0.92in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{xcolor}
+\hypersetup{colorlinks=true, linkcolor=blue!45!black, urlcolor=blue!45!black, citecolor=blue!45!black}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+\setlength{\emergencystretch}{3em}
+\captionsetup{font=small, labelfont=bf}
+\title{Markets for Explanation: A Proposal for Studying Belief-Update Rules in Prediction Markets}
+\author{Prediction-market research proposal}
+\date{June 17, 2026}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Prediction markets aggregate beliefs, but they do not directly reveal why beliefs changed. Recent work on Social World Models (SWM) treats market prices as social beliefs and news as event shocks, learning how candidate events move collective forecasts. This proposal extends that frame from event attribution to explanation. We define an explanation as a reusable belief-update rule: a mapping from prior market state and selected evidence to a posterior belief shift. The central question is whether some explanation classes are systematically popular, correct, both, or neither. The first feasible study uses existing SWM-Bench Kalshi records to generate structured explanations for candidate news, classify the update rules they invoke, and score them against observed price movements, posterior attribution labels, future price paths, and eventually final resolutions. The longer-term goal is to test whether agents that remember successful explanation classes forecast better than agents that only see prices and news.
+\end{abstract}
+
+\section{Core Question}
+The project asks:
+
+\begin{quote}
+\textit{Which evidence-to-belief update rules are rewarded by prediction markets, which are actually correct, and can agents learn from the gap between the two?}
+\end{quote}
+
+The question is deliberately narrower than ``do explanations help?'' and broader than ``which news article mattered?'' A useful explanation is not just a paragraph attached to a forecast. It is a claim about how a belief distribution should change after new information arrives.
+
+\begin{align}
+\text{prior market state } s_t + \text{ selected evidence } E_t + \text{ update rule } u
+\quad \longrightarrow \quad
+\text{posterior belief } \hat{s}_{t+1}.
+\end{align}
+
+The research object is the update rule $u$. Examples include direct-result updates, source-credibility updates, base-rate corrections, resolution-criteria updates, causal-chain inferences, overreaction corrections, and source-disagreement updates.
+
+\section{From Prediction Markets to Explanation Markets}
+A standard prediction market exchanges contingent claims. A trader buys or sells a contract that pays according to a future state of the world. The market price is therefore a compressed signal of marginal belief, incentives, risk tolerance, liquidity, and trading constraints. It is not a direct transcript of the evidence behind the trade.
+
+A market for explanation asks for a second object. Instead of only observing the posterior price, it asks which mapping from evidence to posterior belief traders are implicitly buying:
+
+\begin{quote}
+\textit{Given this prior price and this evidence, what update should a rational trader make, and why?}
+\end{quote}
+
+In this sense, buying an explanation means committing capital, attention, or model weight to a particular version of the belief update. Two traders may see the same public evidence and update differently because they disagree about source credibility, causal relevance, base rates, market resolution criteria, or the appropriate update magnitude. The project treats that heterogeneity as the object to be measured.
+
+\section{Why SWM Is the Right Starting Point}
+SWM already models the core transition:
+
+\begin{align}
+s_{t+1} \sim P_\theta(s_{t+1}\mid s_t,e_t),
+\end{align}
+
+where $s_t$ is a recent price trajectory for a prediction-market question and $e_t$ is a news event. Its training recipe uses a hindsight posterior attributor $Q_\phi$ to score which candidate news item explains an observed belief shift, then trains a deployable prior attributor $P_\eta$ and world model $P_\theta$.
+
+This is close to the proposed project, but it leaves the explanatory object implicit. SWM gives a scalar attribution score:
+
+\begin{quote}
+\textit{This news item likely drove the observed move.}
+\end{quote}
+
+The market-for-explanation project asks for the missing mechanism:
+
+\begin{quote}
+\textit{This news item should move the price upward by a moderate amount because it changes the market's resolution-relevant base rate through a specific causal channel.}
+\end{quote}
+
+The difference matters because SWM's own paper identifies prior attribution as the bottleneck. Once the driving event is identified, the world model performs substantially better. Explanation classes may help diagnose why attribution is hard and which kinds of update rules transfer across markets.
+
+\section{Research Questions}
+\textbf{RQ1. What explanation classes appear in market belief updates?}
+
+Given a market question, recent price history, candidate news, and a target date, can LLMs generate structured explanations that classify the update rule connecting evidence to a predicted belief shift?
+
+\textbf{RQ2. Which explanation classes are popular?}
+
+Popularity is first measured by market uptake: whether the explanation's implied direction and magnitude match the observed next price movement. In richer data, popularity can also include trading volume, liquidity changes, later comment reuse, likes, replies, or agent convergence.
+
+\textbf{RQ3. Which explanation classes are correct?}
+
+Correctness has two targets. Transition correctness asks whether the explanation predicts the next market move. Outcome correctness asks whether the explanation moves belief toward the final resolved truth or toward later corrected prices. The first can be studied immediately with SWM-Bench. The second requires resolution labels or additional price-path analysis.
+
+\textbf{RQ4. Where do popularity and correctness diverge?}
+
+The main scientific value comes from the gap between market uptake and predictive validity.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.18\linewidth}>{\raggedright\arraybackslash}p{0.34\linewidth}>{\raggedright\arraybackslash}p{0.34\linewidth}}
+\toprule
+ & Correct & Wrong \\
+\midrule
+Popular & Consensus learning: explanations that markets reward and outcomes support. & Persuasive error: explanations that move markets but point away from truth. \\
+Unpopular & Trader edge: explanations that are ignored or underweighted but later prove useful. & Noise: explanations that neither move markets nor improve forecasts. \\
+\bottomrule
+\end{tabular}
+\caption{The project's core contrast separates market uptake from predictive validity.}
+\end{table}
+
+\textbf{RQ5. Can reusable explanation classes improve forecasting agents?}
+
+After estimating which explanation classes work, we can test whether agents that store and retrieve successful update rules forecast better than agents that only see prices and raw news. This should be a second-stage experiment, after the explanation landscape is measured.
+
+\section{Feasible First Study}
+The first paper should not require training a new SWM. It can use the released SWM-Bench Kalshi data and new LLM inference for explanation generation.
+
+\textbf{Unit of analysis.} One market transition:
+
+\begin{quote}
+\small
+market question, description, recent price history, candidate news before the target time, posterior attribution scores, target next price, and future path.
+\end{quote}
+
+\textbf{Available local data.} The current workspace contains the main Qwen3.5-397B SWM-Bench train and Kalshi test files, plus raw Kalshi prior and posterior attribution files. The main block includes 8,546 training rows and 760 Kalshi test rows. The raw Kalshi split includes 2,779 train rows and 1,120 test rows with prior and posterior attributed versions.
+
+\textbf{Generated explanation record.} For selected candidate news items, an LLM produces a structured explanation:
+
+\begin{quote}
+\small
+\texttt{\{selected\_evidence, direction, magnitude, mechanism\_class,}\\
+\texttt{update\_logic, uncertainty, expected\_posterior\}}
+\end{quote}
+
+The prompt should be prequential whenever possible: the model sees the market state and candidate evidence available before the target time, but not the realized target price. A separate retrospective prompt can be used for auditing posterior rationalizations, but should be analyzed separately.
+
+\textbf{Candidate selection.} For each row, generate explanations for a small controlled set: the top posterior-attributed news item, the top prior-attributed news item when available, one semantically related low-attribution item, and one random candidate. This creates both positive and hard-negative cases.
+
+\section{Scoring and Estimation}
+The study needs two kinds of labels: market uptake and predictive validity.
+
+\textbf{Market uptake.} The simplest uptake label is agreement with the observed next price movement:
+
+\begin{align}
+\text{uptake}_{ri} = \mathbf{1}\{\operatorname{sign}(\widehat{\Delta p}_{ri}) = \operatorname{sign}(\Delta p_r)\},
+\end{align}
+
+where $\widehat{\Delta p}_{ri}$ is the explanation-implied move for candidate $i$ in row $r$, and $\Delta p_r$ is the realized one-step price change. Magnitude-sensitive versions can score absolute error or rank correlation between implied and realized moves.
+
+\textbf{Predictive validity.} The immediate label is one-step correctness. A more conservative label uses the future path to ask whether the move persisted or reverted. The strongest label uses final market resolution, which requires collecting additional resolution data from Kalshi or Polymarket.
+
+\textbf{Mechanism-class effects.} Estimate whether explanation classes predict uptake or validity after controlling for market category, prior price, recent volatility, candidate source, candidate recency, and baseline attribution score. The key coefficients are not just average performance but interactions between mechanism class and market context.
+
+\textbf{Contrastive quadrants.} Classify explanations into popular-correct, popular-wrong, unpopular-correct, and unpopular-wrong cells. Then compare their mechanism classes, evidence sources, update magnitudes, and uncertainty language. This turns the project from a forecasting benchmark into a map of market reasoning.
+
+\section{What Would Be Novel}
+The contribution is not another LLM forecasting leaderboard. The proposal changes the unit of analysis from forecasts to belief-update rules.
+
+\begin{itemize}
+\item It extends SWM from scalar event attribution to interpretable update mechanisms.
+\item It distinguishes evidence selection from update logic: the same article can imply different posterior moves under different update rules.
+\item It separates market popularity from correctness, making it possible to study persuasive but wrong explanations and ignored but right explanations.
+\item It creates a path toward explanation-aware agents that learn reusable update operators rather than memorizing one-off rationales.
+\end{itemize}
+
+\section{Additional Data and Compute}
+\textbf{No new training required for the first study.} The first study needs LLM inference for structured explanations and standard statistical analysis. It can start with Kalshi only.
+
+\textbf{Useful downloads.} Downloading the rest of SWM-Bench would add Polymarket, Qwen3-32B attribution labels, validation splits, and nonzero-attribution subsets. This would allow platform comparisons and a precision-versus-coverage analysis of explanation classes.
+
+\textbf{Resolution data.} To move from transition correctness to outcome correctness, collect final outcomes and settlement metadata from Kalshi and Polymarket. This is likely the most valuable data addition.
+
+\textbf{Optional model training.} A later phase can train a smaller explanation-aware attributor or forecasting agent. The full SWM setup used large-GPU training, but a proof of concept could use a smaller Qwen backbone, LoRA, or frozen embeddings with lightweight classifiers.
+
+\section{Risks and Design Choices}
+\textbf{Post-hoc rationalization.} If the LLM sees the realized posterior move, it may generate fluent explanations that only rationalize the target. The main generation protocol should hide the target price and reserve retrospective prompts for auditing.
+
+\textbf{Posterior attribution is not ground truth.} SWM posterior labels are hindsight pseudo-labels. They are useful but can be spurious. The proposal should treat them as one signal among several, not as causal truth.
+
+\textbf{Explanation classes may be too broad or too narrow.} The taxonomy should begin with a small hand-designed codebook, then allow clustering or open coding to refine it. The goal is reusable update operators, not thousands of unique rationales.
+
+\textbf{Markets may move for endogenous reasons.} Some price changes reflect liquidity, hedging, or trader coordination rather than external news. This is a feature for the project if modeled explicitly: ``endogenous/noise update'' should be one possible explanation class.
+
+\section{Recommended Milestones}
+\begin{enumerate}
+\item Build a 100-row pilot from Kalshi test rows with posterior-positive and posterior-zero examples.
+\item Write and freeze a structured explanation prompt that hides the target price.
+\item Generate explanations for top posterior, top prior, hard-negative, and random candidate news.
+\item Hand-audit 30 to 50 examples to refine the mechanism-class taxonomy.
+\item Run the first scoring analysis: mechanism class versus one-step uptake and posterior attribution.
+\item Add future-path persistence and resolution labels.
+\item Only then test explanation-memory agents or train an explanation-aware attributor.
+\end{enumerate}
+
+\section{One-Sentence Version}
+Prediction markets tell us what traders believe; SWM begins to estimate which events moved those beliefs; a market for explanation asks which reusable evidence-to-belief update rules are popular, which are correct, and whether agents can learn from the difference.
+
+\section{References}
+\begin{itemize}
+\item Yu et al. (2026), \textit{Building Social World Models with Large Language Models}: \url{https://arxiv.org/pdf/2606.11482}
+\item SWM-Bench dataset: \url{https://huggingface.co/datasets/ulab-ai/swm-bench}
+\item Social World Model code: \url{https://github.com/ulab-uiuc/social-world-model}
+\item Srinivasan et al. (2025), \textit{Tell Me Why: Incentivizing Explanations}: \url{https://arxiv.org/pdf/2502.13410}
+\item Hossain et al. (2026), \textit{Evidence Markets}: \url{https://arxiv.org/pdf/2606.07434}
+\item Srinivasan et al. (2025), \textit{Self-Resolving Prediction Markets for Unverifiable Outcomes}: \url{https://arxiv.org/pdf/2306.04305}
+\item Halawi et al. (2024), \textit{Approaching Human-Level Forecasting with Language Models}: \url{https://arxiv.org/pdf/2402.18563}
+\item Karger et al. (2025), \textit{ForecastBench}: \url{https://arxiv.org/pdf/2409.19839}
+\end{itemize}
+
+\end{document}
