@@ -48,9 +48,46 @@ Examples of reusable explanation classes:
 
 - Proposal PDF: `reports/explanation_market_proposal/market_for_explanations_proposal.pdf`
 - Proposal TeX: `reports/explanation_market_proposal/market_for_explanations_proposal.tex`
+- Research design note: `docs/explanation_market_research_design.md`
+- Pilot design note: `docs/explanation_pilot_design.md`
+- Pilot run log: `docs/explanation_pilot_run_log.md`
 - Earlier SWM source-level memo: `reports/no_training/attention_is_not_information_no_training.pdf`
 - Mechanism-design related-work note: `docs/evidence_explanations_related_work.md`
 - Prior no-training analysis log: `docs/no_training_analysis_log.md`
+
+## 2026-06-29 Research Design Distillation
+
+The current project should be framed as an empirical extension of SWM from
+event attribution to explanation attribution. SWM asks which news moved a
+market and how much the market should move. This project asks which reusable
+belief-update rules connect evidence to posterior changes.
+
+The most important clarification is that an explanation should not be reduced
+to "move posterior from X to Y." That fully specified posterior can overfit a
+single market transition. We should instead keep separate levels:
+
+```text
+explanation class -> update rule -> calibration policy -> posterior instance
+```
+
+This makes "same explanation, different posterior" an empirical question rather
+than a modeling bug. A class such as source credibility weighting may be useful
+only when paired with context-specific calibration features. The pilot should
+therefore measure posterior variance within each explanation class.
+
+The clean contribution is not LLM hypothesis generation by itself. LLMs are
+cheap generators of candidate explanations. The contribution is market-based
+scoring of explanation candidates on two separate targets:
+
+```text
+market-update accuracy: does this update predict how other agents update?
+outcome/payoff accuracy: does this update predict what eventually happens?
+```
+
+Detailed design is now split into:
+
+- `docs/explanation_market_research_design.md`
+- `docs/explanation_pilot_design.md`
 
 ## Motivating Posts And Screenshots
 
@@ -122,11 +159,22 @@ Connection to this project:
 - Srinivasan et al. (2025), "Self-Resolving Prediction Markets for
   Unverifiable Outcomes":
   <https://arxiv.org/pdf/2306.04305>
+- Zhou et al. (2024), "Hypothesis Generation with Large Language Models":
+  <https://arxiv.org/abs/2404.04326>
+- Liu et al. (2025), "HypoBench: Towards Systematic and Principled
+  Benchmarking for Hypothesis Generation":
+  <https://arxiv.org/abs/2504.11524>
 - Halawi et al. (2024), "Approaching Human-Level Forecasting with Language
   Models":
   <https://arxiv.org/pdf/2402.18563>
 - Karger et al. (2025), "ForecastBench":
   <https://arxiv.org/pdf/2409.19839>
+- Yang et al. (2025), "LLM-as-a-Prophet: Understanding Predictive Intelligence
+  with Prophet Arena":
+  <https://arxiv.org/abs/2510.17638>
+- Zhang et al. (2026), "Prediction Arena: Benchmarking AI Models on Real-World
+  Prediction Markets":
+  <https://arxiv.org/abs/2604.07355>
 
 ## What We Have Locally
 
@@ -440,3 +488,43 @@ or prior-attributed news appears semantically thin, topically broad, or plainly
 off-topic on first inspection. That is not a problem for the project. It is a
 reason to run the explanation audit: scalar attribution alone does not tell us
 whether the evidence-to-belief link is coherent.
+
+## 2026-06-29 Empirical Checkpoint
+
+The Gemma 4 26B grounded non-null pilot now separates two bottlenecks.
+
+First, there is a selector gap. Gemma can generate multiple plausible
+explanation/update candidates, but its recommended candidate is not reliably
+the candidate closest to the next market price. A leakage-safe selector audit
+found:
+
+```text
+random_expected_top1: 0.248
+gemma_recommended_top1: 0.396
+core_relative_logit_top1: 0.532
+max_abs_update_top1: 0.613
+```
+
+The earlier high score for "max selected evidence count" was a tie-breaking
+artifact caused by using row order from a ranking CSV sorted by market-error
+rank. With safe tie-breaking, that heuristic is only 0.435 top-1.
+
+Second, there is a generation gap. Even with a post-hoc oracle selector, the
+generated candidate pool is too narrow:
+
+```text
+mean_persistence_error: 0.181
+mean_oracle_best_candidate_error: 0.140
+best_candidate_within_5pp_rate: 0.210
+target_bracketed_by_candidate_range_rate: 0.000
+```
+
+The dominant generation failure is underreaction. In 38 of 62 held-out prompts,
+Gemma generated a candidate in the right direction but not far enough. When the
+best candidate has the correct direction, its median update is only about 25%
+of the actual market move.
+
+Current implication: before making the selector much more complex, the next
+generation prompt should explicitly produce calibration-diverse update models:
+strict/no-update, conservative, moderate, aggressive market-reaction, and
+contrarian/noise-or-overreaction.

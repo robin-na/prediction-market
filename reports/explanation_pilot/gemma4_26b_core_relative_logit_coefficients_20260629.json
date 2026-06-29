@@ -1,0 +1,35 @@
+{
+  "ap": 0.382703575849252,
+  "auc": 0.6381947599575951,
+  "confidence_top1": 0.43548387096774194,
+  "features": [
+    {
+      "coef_std": 0.21547634956231926,
+      "feature": "confidence_z",
+      "odds_ratio_per_sd": 1.2404526453282094
+    },
+    {
+      "coef_std": -0.3259772738546517,
+      "feature": "posterior_z",
+      "odds_ratio_per_sd": 0.7218215914677181
+    },
+    {
+      "coef_std": 0.6565425800343789,
+      "feature": "abs_explanation_delta_z",
+      "odds_ratio_per_sd": 1.928114495454693
+    },
+    {
+      "coef_std": 0.3001849906789266,
+      "feature": "selected_evidence_count_z",
+      "odds_ratio_per_sd": 1.3501085419718273
+    },
+    {
+      "coef_std": -0.4275219664435782,
+      "feature": "evidence_weights_count_z",
+      "odds_ratio_per_sd": 0.652123077014028
+    }
+  ],
+  "gemma_recommended": 0.39622641509433965,
+  "random": 0.24758064516129027,
+  "top1": 0.532258064516129
+}

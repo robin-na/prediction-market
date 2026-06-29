@@ -1,0 +1,162 @@
+{
+  "feature_count": 48,
+  "intercept": -0.19908414374848812,
+  "output_csv": "reports/explanation_pilot/gemma4_26b_train_all_logit_relative_coefficients_20260629.csv",
+  "positive_rate": 0.2204261572373255,
+  "prompt_count": 300,
+  "top_negative": [
+    {
+      "coef_std": -0.49434018456846357,
+      "feature": "abs_explanation_delta_rel_mean",
+      "odds_ratio_per_sd": 0.6099732443070466
+    },
+    {
+      "coef_std": -0.41199196675584165,
+      "feature": "abs_explanation_delta_rank_asc",
+      "odds_ratio_per_sd": 0.6623295966861147
+    },
+    {
+      "coef_std": -0.35734364124417245,
+      "feature": "evidence_weights_count_rel_mean",
+      "odds_ratio_per_sd": 0.6995320683559433
+    },
+    {
+      "coef_std": -0.3165910502350797,
+      "feature": "selected_evidence_count_rank_desc",
+      "odds_ratio_per_sd": 0.7286286667280826
+    },
+    {
+      "coef_std": -0.2901095265404471,
+      "feature": "confidence_rank_desc",
+      "odds_ratio_per_sd": 0.7481816173466104
+    },
+    {
+      "coef_std": -0.2776328060760512,
+      "feature": "confidence_z",
+      "odds_ratio_per_sd": 0.7575749473657577
+    },
+    {
+      "coef_std": -0.15538875041533382,
+      "feature": "explanation_delta_rank_asc",
+      "odds_ratio_per_sd": 0.8560823104329628
+    },
+    {
+      "coef_std": -0.15538875041533382,
+      "feature": "posterior_rank_asc",
+      "odds_ratio_per_sd": 0.8560823104329628
+    },
+    {
+      "coef_std": -0.14386147670999747,
+      "feature": "selected_with_irrelevance",
+      "odds_ratio_per_sd": 0.8660077019868536
+    },
+    {
+      "coef_std": -0.1424523437788237,
+      "feature": "evidence_weights_count_rank_asc",
+      "odds_ratio_per_sd": 0.8672288821589008
+    },
+    {
+      "coef_std": -0.08925233244502141,
+      "feature": "posterior_z",
+      "odds_ratio_per_sd": 0.9146147574764748
+    },
+    {
+      "coef_std": -0.08925233244499091,
+      "feature": "explanation_delta_z",
+      "odds_ratio_per_sd": 0.9146147574765027
+    },
+    {
+      "coef_std": -0.06882460385024836,
+      "feature": "evidence_weights_count_rank_desc",
+      "odds_ratio_per_sd": 0.9334903963415295
+    },
+    {
+      "coef_std": -0.049960806019722984,
+      "feature": "class_causal_chain",
+      "odds_ratio_per_sd": 0.9512667076986505
+    },
+    {
+      "coef_std": -0.04175064908315754,
+      "feature": "class_overreaction_correction",
+      "odds_ratio_per_sd": 0.9591089054431667
+    }
+  ],
+  "top_positive": [
+    {
+      "coef_std": 1.651045369273197,
+      "feature": "abs_explanation_delta_z",
+      "odds_ratio_per_sd": 5.212425889974739
+    },
+    {
+      "coef_std": 0.3000738875028276,
+      "feature": "magnitude_none",
+      "odds_ratio_per_sd": 1.34995854895724
+    },
+    {
+      "coef_std": 0.24535128809194492,
+      "feature": "abs_explanation_delta_rank_desc",
+      "odds_ratio_per_sd": 1.2780702051988204
+    },
+    {
+      "coef_std": 0.17603409788865101,
+      "feature": "magnitude_small",
+      "odds_ratio_per_sd": 1.192478718964028
+    },
+    {
+      "coef_std": 0.15041023731979355,
+      "feature": "confidence_rel_mean",
+      "odds_ratio_per_sd": 1.1623109682726833
+    },
+    {
+      "coef_std": 0.12175769068589254,
+      "feature": "confidence_rank_asc",
+      "odds_ratio_per_sd": 1.129480385002208
+    },
+    {
+      "coef_std": 0.11178826781251397,
+      "feature": "abs_explanation_delta",
+      "odds_ratio_per_sd": 1.1182760605403164
+    },
+    {
+      "coef_std": 0.10715430847537011,
+      "feature": "confidence",
+      "odds_ratio_per_sd": 1.1131060029181006
+    },
+    {
+      "coef_std": 0.09959896598514484,
+      "feature": "explanation_delta",
+      "odds_ratio_per_sd": 1.1047277958047612
+    },
+    {
+      "coef_std": 0.09838347978057857,
+      "feature": "has_evidence_irrelevance",
+      "odds_ratio_per_sd": 1.1033858301447521
+    },
+    {
+      "coef_std": 0.09838347978057857,
+      "feature": "class_evidence_irrelevance",
+      "odds_ratio_per_sd": 1.1033858301447521
+    },
+    {
+      "coef_std": 0.097148273632767,
+      "feature": "selected_evidence_count_rank_asc",
+      "odds_ratio_per_sd": 1.1020237625742468
+    },
+    {
+      "coef_std": 0.09673943714407268,
+      "feature": "magnitude_moderate",
+      "odds_ratio_per_sd": 1.1015733071362825
+    },
+    {
+      "coef_std": 0.07512769025558876,
+      "feature": "class_trend_continuation",
+      "odds_ratio_per_sd": 1.0780217949750706
+    },
+    {
+      "coef_std": 0.07455360876582481,
+      "feature": "magnitude_large",
+      "odds_ratio_per_sd": 1.0774031002246072
+    }
+  ],
+  "train_rows": 1361
+}

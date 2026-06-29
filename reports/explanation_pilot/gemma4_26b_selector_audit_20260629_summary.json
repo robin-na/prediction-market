@@ -1,0 +1,17 @@
+{
+  "outputs": {
+    "candidate_feature_diagnostics": "reports/explanation_pilot/gemma4_26b_selector_audit_20260629_candidate_feature_diagnostics.csv",
+    "evidence_count_diagnostics": "reports/explanation_pilot/gemma4_26b_selector_audit_20260629_evidence_count_diagnostics.csv",
+    "prompt_diagnostics": "reports/explanation_pilot/gemma4_26b_selector_audit_20260629_prompt_diagnostics.csv",
+    "selected_candidates": "reports/explanation_pilot/gemma4_26b_selector_audit_20260629_selected_candidates.csv",
+    "selector_performance": "reports/explanation_pilot/gemma4_26b_selector_audit_20260629_selector_performance.csv",
+    "stratified_performance": "reports/explanation_pilot/gemma4_26b_selector_audit_20260629_stratified_performance.csv",
+    "tie_diagnostics": "reports/explanation_pilot/gemma4_26b_selector_audit_20260629_tie_diagnostics.csv"
+  },
+  "test_candidate_rows": 275,
+  "test_input": "data/derived/explanation_pilot/ranking/gemma4_26b_grounded_nonnull_72_valid_ranking_candidates.csv",
+  "test_prompt_count": 62,
+  "train_candidate_rows": 1361,
+  "train_input": "data/derived/explanation_pilot/ranking/gemma4_26b_grounded_nonnull_train_all_batches_valid_ranking_candidates.csv",
+  "train_prompt_count": 300
+}

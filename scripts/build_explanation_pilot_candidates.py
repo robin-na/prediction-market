@@ -68,6 +68,77 @@ STOPWORDS = {
     "yes",
 }
 
+GROUNDED_INCLUDE_PATTERNS: dict[str, re.Pattern[str]] = {
+    "election_result": re.compile(
+        r"\b(election|elected|mayor|president|governor|senate|house|primary|"
+        r"nominee|nomination|vote share|margin of victory|polling average)\b",
+        re.I,
+    ),
+    "official_political_process": re.compile(
+        r"\b(vote|bill|spending bill|omnibus|minibus|government shutdown|"
+        r"confirmation|impeached|supreme court|congress|senate|house|tariff|"
+        r"sanction|ceasefire|treaty)\b",
+        re.I,
+    ),
+    "economic_release": re.compile(
+        r"\b(cpi|inflation|unemployment|jobs report|gdp|fed|fomc|interest rate|"
+        r"rate cut|rate hike|treasury|recession)\b",
+        re.I,
+    ),
+    "company_scheduled_disclosure": re.compile(
+        r"\b(earnings call|earnings|revenue|eps|guidance|profit|sales|stock price|"
+        r"market cap|ipo)\b",
+        re.I,
+    ),
+    "legal_regulatory": re.compile(
+        r"\b(court|judge|trial|lawsuit|settlement|regulat|sec|fda|approval|ban|"
+        r"permit|license)\b",
+        re.I,
+    ),
+}
+
+GROUNDED_EXCLUDE_PATTERNS: dict[str, re.Pattern[str]] = {
+    "attention_mentions": re.compile(
+        r"\b(say|says|mention|tweet|post|truth|quote|word|phrase|crooked hillary|"
+        r"press briefing)\b",
+        re.I,
+    ),
+    "popularity_attention": re.compile(
+        r"\b(wikipedia|most popular|person of the year|year in search|box office|"
+        r"trailer|google trends)\b",
+        re.I,
+    ),
+    "awards_entertainment": re.compile(
+        r"\b(oscar|golden globe|grammy|emmy|award|nominee|nomination|best actor|"
+        r"best director|best picture|best television)\b",
+        re.I,
+    ),
+    "sports_or_game": re.compile(
+        r"\b(nba|nfl|mlb|nhl|ufc|world cup|game|match|playoff|champion|"
+        r"tournament)\b",
+        re.I,
+    ),
+}
+
+GROUNDED_ALLOWED_CATEGORIES = {
+    "Politics",
+    "Elections",
+    "Economics",
+    "Companies",
+    "Financials",
+    "World",
+    "Health",
+    "Science and Technology",
+}
+
+GROUNDED_EXCLUDED_CATEGORIES = {
+    "Crypto",
+    "Entertainment",
+    "Mentions",
+    "Social",
+    "Sports",
+}
+
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     with path.open(encoding="utf-8") as handle:
@@ -168,6 +239,43 @@ def lexical_overlap(question: str, news: dict[str, Any]) -> float:
     return len(q_tokens & n_tokens) / len(q_tokens)
 
 
+def market_text(record: dict[str, Any]) -> str:
+    return " ".join(
+        str(record.get(key) or "") for key in ("question", "description", "rules")
+    )
+
+
+def market_grounding(record: dict[str, Any]) -> dict[str, Any]:
+    """Classify whether a market is suitable for the grounded-evidence pilot."""
+
+    category = category_of(record)
+    text = market_text(record)
+    include_reasons = [
+        name for name, pattern in GROUNDED_INCLUDE_PATTERNS.items() if pattern.search(text)
+    ]
+    raw_exclusions = [
+        name for name, pattern in GROUNDED_EXCLUDE_PATTERNS.items() if pattern.search(text)
+    ]
+
+    exclusion_reasons = list(raw_exclusions)
+    if category in GROUNDED_EXCLUDED_CATEGORIES:
+        exclusion_reasons.append(f"excluded_category:{category}")
+    if category not in GROUNDED_ALLOWED_CATEGORIES:
+        exclusion_reasons.append(f"not_allowed_category:{category}")
+
+    # Earnings-call markets use "say" language, but the relevant event is a
+    # scheduled company disclosure rather than an open-ended attention/mentions market.
+    if "company_scheduled_disclosure" in include_reasons and "attention_mentions" in exclusion_reasons:
+        exclusion_reasons.remove("attention_mentions")
+
+    is_grounded = bool(include_reasons) and not exclusion_reasons
+    return {
+        "is_grounded_market": is_grounded,
+        "grounding_reasons": include_reasons,
+        "grounding_exclusion_reasons": exclusion_reasons,
+    }
+
+
 def rank_map(scores: dict[int, float]) -> dict[int, int]:
     ranked = sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))
     return {idx: rank + 1 for rank, (idx, _) in enumerate(ranked)}
@@ -198,6 +306,7 @@ def paired_rows(posterior_path: Path, prior_path: Path) -> list[dict[str, Any]]:
         prior_scores = score_map(prior)
         news = posterior.get("news") or []
         delta = price_delta(posterior)
+        grounding = market_grounding(posterior)
         rows.append(
             {
                 "row_idx": row_idx,
@@ -213,9 +322,18 @@ def paired_rows(posterior_path: Path, prior_path: Path) -> list[dict[str, Any]]:
                 "abs_delta": abs(delta) if math.isfinite(delta) else math.nan,
                 "category": category_of(posterior),
                 "sample_type": str(posterior.get("sample_type") or ""),
+                **grounding,
             }
         )
     return rows
+
+
+def filter_rows_by_market(rows: list[dict[str, Any]], market_filter: str) -> list[dict[str, Any]]:
+    if market_filter == "all":
+        return rows
+    if market_filter == "grounded":
+        return [row for row in rows if row.get("is_grounded_market")]
+    raise ValueError(f"unknown market filter: {market_filter}")
 
 
 def select_with_cap(rows: list[dict[str, Any]], n: int, category_cap: int) -> list[dict[str, Any]]:
@@ -239,7 +357,23 @@ def select_with_cap(rows: list[dict[str, Any]], n: int, category_cap: int) -> li
     return selected
 
 
-def build_row_sample(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def assign_bucket(row: dict[str, Any], bucket: str) -> dict[str, Any]:
+    out = dict(row)
+    out["row_bucket"] = bucket
+    return out
+
+
+def build_row_sample(rows: list[dict[str, Any]], sample_mode: str) -> list[dict[str, Any]]:
+    if sample_mode == "all_positive":
+        positive = sorted(
+            [row for row in rows if row["positive_posterior"]],
+            key=lambda row: (-row["abs_delta"], row["row_idx"]),
+        )
+        return [assign_bucket(row, "posterior_attributed_move") for row in positive]
+
+    if sample_mode != "balanced_100":
+        raise ValueError(f"unknown sample mode: {sample_mode}")
+
     positive = sorted(
         [row for row in rows if row["positive_posterior"]],
         key=lambda row: (-row["abs_delta"], row["row_idx"]),
@@ -264,9 +398,7 @@ def build_row_sample(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if len(part) < n:
             raise ValueError(f"not enough rows for {bucket}: needed {n}, found {len(part)}")
         for row in part:
-            row = dict(row)
-            row["row_bucket"] = bucket
-            sampled.append(row)
+            sampled.append(assign_bucket(row, bucket))
     return sampled
 
 
@@ -276,7 +408,28 @@ def add_selection(selections: dict[int, set[str]], idx: int | None, reason: str)
     selections.setdefault(idx, set()).add(reason)
 
 
-def choose_candidates(row: dict[str, Any], rng: random.Random) -> dict[int, set[str]]:
+def add_ranked_selections(
+    selections: dict[int, set[str]],
+    ranked_indices: list[int],
+    k: int,
+    primary_reason: str,
+    top_k_reason: str,
+) -> None:
+    for rank, idx in enumerate(ranked_indices[: max(k, 0)], start=1):
+        add_selection(selections, idx, top_k_reason)
+        if rank == 1:
+            add_selection(selections, idx, primary_reason)
+
+
+def choose_candidates(
+    row: dict[str, Any],
+    rng: random.Random,
+    *,
+    top_posterior_k: int,
+    top_prior_k: int,
+    hard_negative_k: int,
+    random_k: int,
+) -> dict[int, set[str]]:
     posterior = row["posterior"]
     news = posterior.get("news") or []
     post_scores = row["post_scores"]
@@ -285,15 +438,25 @@ def choose_candidates(row: dict[str, Any], rng: random.Random) -> dict[int, set[
     selections: dict[int, set[str]] = {}
 
     positive_post = [(idx, score) for idx, score in post_scores.items() if score > 0]
-    top_post_idx = None
     if positive_post:
-        top_post_idx = sorted(positive_post, key=lambda kv: (-kv[1], kv[0]))[0][0]
-    add_selection(selections, top_post_idx, "top_posterior")
+        post_ranked = [idx for idx, _ in sorted(positive_post, key=lambda kv: (-kv[1], kv[0]))]
+        add_ranked_selections(
+            selections,
+            post_ranked,
+            top_posterior_k,
+            "top_posterior",
+            "posterior_top_k",
+        )
 
-    top_prior_idx = None
     if prior_scores:
-        top_prior_idx = sorted(prior_scores.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
-    add_selection(selections, top_prior_idx, "top_prior")
+        prior_ranked = [idx for idx, _ in sorted(prior_scores.items(), key=lambda kv: (-kv[1], kv[0]))]
+        add_ranked_selections(
+            selections,
+            prior_ranked,
+            top_prior_k,
+            "top_prior",
+            "prior_top_k",
+        )
 
     overlaps = {idx: lexical_overlap(question, item) for idx, item in enumerate(news)}
     hard_negative_pool = [
@@ -302,19 +465,27 @@ def choose_candidates(row: dict[str, Any], rng: random.Random) -> dict[int, set[
         if post_scores.get(idx, 0.0) <= 0 and idx not in selections
     ]
     if hard_negative_pool:
-        hard_idx = sorted(
+        hard_ranked = sorted(
             hard_negative_pool,
             key=lambda idx: (
                 -overlaps.get(idx, 0.0),
                 -prior_scores.get(idx, 0.0),
                 idx,
             ),
-        )[0]
-        add_selection(selections, hard_idx, "lexical_hard_negative")
+        )
+        add_ranked_selections(
+            selections,
+            hard_ranked,
+            hard_negative_k,
+            "lexical_hard_negative",
+            "lexical_hard_negative_k",
+        )
 
     random_pool = [idx for idx in range(len(news)) if idx not in selections]
-    if random_pool:
-        add_selection(selections, rng.choice(random_pool), "random_candidate")
+    random_count = min(max(random_k, 0), len(random_pool))
+    if random_count:
+        for idx in rng.sample(random_pool, random_count):
+            add_selection(selections, idx, "random_candidate")
 
     return selections
 
@@ -329,7 +500,21 @@ def compact_news(news: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def candidate_rows(sampled_rows: list[dict[str, Any]], seed: int) -> list[dict[str, Any]]:
+def pilot_row_id(row: dict[str, Any], row_id_prefix: str) -> str:
+    prefix = row_id_prefix.strip() or "kalshi_test"
+    return f"{prefix}_{row['row_idx']:04d}"
+
+
+def candidate_rows(
+    sampled_rows: list[dict[str, Any]],
+    seed: int,
+    *,
+    top_posterior_k: int,
+    top_prior_k: int,
+    hard_negative_k: int,
+    random_k: int,
+    row_id_prefix: str,
+) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for row in sampled_rows:
         rng = random.Random(seed + row["row_idx"])
@@ -346,12 +531,19 @@ def candidate_rows(sampled_rows: list[dict[str, Any]], seed: int) -> list[dict[s
         after = posterior.get("after") or {}
         delta = row["price_delta"]
 
-        selections = choose_candidates(row, rng)
+        selections = choose_candidates(
+            row,
+            rng,
+            top_posterior_k=top_posterior_k,
+            top_prior_k=top_prior_k,
+            hard_negative_k=hard_negative_k,
+            random_k=random_k,
+        )
         for idx, reasons in sorted(selections.items()):
             item = news[idx]
             out.append(
                 {
-                    "pilot_row_id": f"kalshi_test_{row['row_idx']:04d}",
+                    "pilot_row_id": pilot_row_id(row, row_id_prefix),
                     "row_idx": row["row_idx"],
                     "row_bucket": row["row_bucket"],
                     "selection_reasons": sorted(reasons),
@@ -361,6 +553,9 @@ def candidate_rows(sampled_rows: list[dict[str, Any]], seed: int) -> list[dict[s
                     "description": posterior.get("description") or prior.get("description") or "",
                     "category": row["category"],
                     "sample_type": row["sample_type"],
+                    "is_grounded_market": row["is_grounded_market"],
+                    "grounding_reasons": row["grounding_reasons"],
+                    "grounding_exclusion_reasons": row["grounding_exclusion_reasons"],
                     "before_t": before.get("t"),
                     "before_p": before.get("p"),
                     "after_t": after.get("t"),
@@ -386,15 +581,25 @@ def candidate_rows(sampled_rows: list[dict[str, Any]], seed: int) -> list[dict[s
     return out
 
 
-def row_records(sampled_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def row_records(sampled_rows: list[dict[str, Any]], row_id_prefix: str) -> list[dict[str, Any]]:
     rows = []
     for row in sampled_rows:
         posterior = row["posterior"]
         before = posterior.get("before") or {}
         after = posterior.get("after") or {}
+        before_t = before.get("t")
+        price_history = []
+        for point in posterior.get("window_history") or []:
+            t_value = point.get("t") if isinstance(point, dict) else None
+            p_value = point.get("p") if isinstance(point, dict) else None
+            if not isinstance(t_value, (int, float)) or not isinstance(p_value, (int, float)):
+                continue
+            if isinstance(before_t, (int, float)) and float(t_value) > float(before_t):
+                continue
+            price_history.append({"t": t_value, "p": p_value})
         rows.append(
             {
-                "pilot_row_id": f"kalshi_test_{row['row_idx']:04d}",
+                "pilot_row_id": pilot_row_id(row, row_id_prefix),
                 "row_idx": row["row_idx"],
                 "row_bucket": row["row_bucket"],
                 "market_id": posterior.get("market_id"),
@@ -402,8 +607,12 @@ def row_records(sampled_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "question": posterior.get("question"),
                 "category": row["category"],
                 "sample_type": row["sample_type"],
+                "is_grounded_market": row["is_grounded_market"],
+                "grounding_reasons": row["grounding_reasons"],
+                "grounding_exclusion_reasons": row["grounding_exclusion_reasons"],
                 "before_t": before.get("t"),
                 "before_p": before.get("p"),
+                "price_history": price_history,
                 "after_t": after.get("t"),
                 "after_p": after.get("p"),
                 "price_delta": row["price_delta"],
@@ -480,6 +689,10 @@ def build_summary(
     rows: list[dict[str, Any]],
     candidates: list[dict[str, Any]],
     all_rows: list[dict[str, Any]],
+    *,
+    candidate_config: dict[str, int],
+    market_filter: str,
+    eligible_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
     reasons = Counter(reason for cand in candidates for reason in cand["selection_reasons"])
     candidate_buckets = Counter(cand["row_bucket"] for cand in candidates)
@@ -499,6 +712,8 @@ def build_summary(
     return {
         "row_count": len(rows),
         "candidate_count": len(candidates),
+        "market_filter": market_filter,
+        "candidate_config": candidate_config,
         "row_buckets": count_by(rows, "row_bucket"),
         "row_categories": count_by(rows, "category"),
         "row_sample_types": count_by(rows, "sample_type"),
@@ -516,6 +731,7 @@ def build_summary(
         ),
         "max_abs_delta": max(row["abs_delta"] for row in rows),
         "median_abs_delta": sorted(row["abs_delta"] for row in rows)[len(rows) // 2],
+        "eligible_input_summary": full_input_summary(eligible_rows),
         "full_input_summary": full_input_summary(all_rows),
     }
 
@@ -547,6 +763,8 @@ def write_markdown_report(
     rows: list[dict[str, Any]],
     candidates: list[dict[str, Any]],
     summary: dict[str, Any],
+    *,
+    output_files: list[Path],
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     by_row: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -598,8 +816,11 @@ def write_markdown_report(
         "",
         "## Counts",
         "",
+        f"- Market filter: `{summary['market_filter']}`",
+        f"- Eligible input rows after filter: `{summary['eligible_input_summary']['input_rows']}`",
         f"- Rows: `{summary['row_count']}`",
         f"- Candidate news records: `{summary['candidate_count']}`",
+        f"- Candidate config: `{summary['candidate_config']}`",
         f"- Row buckets: `{summary['row_buckets']}`",
         f"- Selection reasons: `{summary['selection_reason_counts']}`",
         f"- Top-prior candidates posterior-positive rate: `{summary['top_prior_posterior_positive_rate']:.3f}`",
@@ -631,12 +852,27 @@ def write_markdown_report(
         "",
         "## Output Files",
         "",
-        "- `data/derived/explanation_pilot/kalshi_100row_rows.jsonl`",
-        "- `data/derived/explanation_pilot/kalshi_100row_candidates.jsonl`",
-        "- `data/derived/explanation_pilot/summary.json`",
-        "- `data/derived/explanation_pilot/candidate_selection_summary.csv`",
+        *[f"- `{path.as_posix()}`" for path in output_files],
     ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def output_paths(out_dir: Path, report_dir: Path, prefix: str) -> dict[str, Path]:
+    if prefix:
+        return {
+            "rows": out_dir / f"{prefix}_rows.jsonl",
+            "candidates": out_dir / f"{prefix}_candidates.jsonl",
+            "summary": out_dir / f"{prefix}_summary.json",
+            "reason_summary": out_dir / f"{prefix}_candidate_selection_summary.csv",
+            "report": report_dir / f"{prefix}_data_prep_summary.md",
+        }
+    return {
+        "rows": out_dir / "kalshi_100row_rows.jsonl",
+        "candidates": out_dir / "kalshi_100row_candidates.jsonl",
+        "summary": out_dir / "summary.json",
+        "reason_summary": out_dir / "candidate_selection_summary.csv",
+        "report": report_dir / "initial_data_prep_summary.md",
+    }
 
 
 def parse_args() -> argparse.Namespace:
@@ -648,29 +884,81 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--report-dir", type=Path, default=DEFAULT_REPORT_DIR)
     parser.add_argument("--seed", type=int, default=1729)
+    parser.add_argument("--top-posterior-k", type=int, default=1)
+    parser.add_argument("--top-prior-k", type=int, default=1)
+    parser.add_argument("--hard-negative-k", type=int, default=1)
+    parser.add_argument("--random-k", type=int, default=1)
+    parser.add_argument(
+        "--market-filter",
+        default="all",
+        choices=["all", "grounded"],
+        help="Filter source markets before sampling rows.",
+    )
+    parser.add_argument(
+        "--sample-mode",
+        default="balanced_100",
+        choices=["balanced_100", "all_positive"],
+        help="Sampling scheme after market filtering.",
+    )
+    parser.add_argument(
+        "--output-prefix",
+        default="",
+        help="Optional prefix for alternate output files, e.g. kalshi_100row_expanded_k10.",
+    )
+    parser.add_argument(
+        "--row-id-prefix",
+        default="kalshi_test",
+        help="Prefix for pilot_row_id values. Use distinct prefixes when building multiple splits.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    rows = paired_rows(args.posterior_test, args.prior_test)
-    sampled = build_row_sample(rows)
-    sampled_rows = row_records(sampled)
-    candidates = candidate_rows(sampled, seed=args.seed)
-    summary = build_summary(sampled_rows, candidates, rows)
+    all_rows = paired_rows(args.posterior_test, args.prior_test)
+    rows = filter_rows_by_market(all_rows, args.market_filter)
+    sampled = build_row_sample(rows, args.sample_mode)
+    sampled_rows = row_records(sampled, args.row_id_prefix)
+    candidate_config = {
+        "top_posterior_k": args.top_posterior_k,
+        "top_prior_k": args.top_prior_k,
+        "hard_negative_k": args.hard_negative_k,
+        "random_k": args.random_k,
+    }
+    candidates = candidate_rows(
+        sampled,
+        seed=args.seed,
+        row_id_prefix=args.row_id_prefix,
+        **candidate_config,
+    )
+    summary = build_summary(
+        sampled_rows,
+        candidates,
+        all_rows,
+        candidate_config=candidate_config,
+        market_filter=args.market_filter,
+        eligible_rows=rows,
+    )
+    paths = output_paths(args.out_dir, args.report_dir, args.output_prefix)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    write_jsonl(args.out_dir / "kalshi_100row_rows.jsonl", sampled_rows)
-    write_jsonl(args.out_dir / "kalshi_100row_candidates.jsonl", candidates)
-    (args.out_dir / "summary.json").write_text(
+    write_jsonl(paths["rows"], sampled_rows)
+    write_jsonl(paths["candidates"], candidates)
+    paths["summary"].write_text(
         json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
     )
-    write_reason_summary(args.out_dir / "candidate_selection_summary.csv", candidates)
+    write_reason_summary(paths["reason_summary"], candidates)
     write_markdown_report(
-        args.report_dir / "initial_data_prep_summary.md",
+        paths["report"],
         sampled_rows,
         candidates,
         summary,
+        output_files=[
+            paths["rows"],
+            paths["candidates"],
+            paths["summary"],
+            paths["reason_summary"],
+        ],
     )
 
     print(json.dumps(summary, indent=2, sort_keys=True))
