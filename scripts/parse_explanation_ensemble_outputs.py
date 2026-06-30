@@ -51,14 +51,45 @@ def extract_json_object(text: str) -> dict[str, Any]:
     except json.JSONDecodeError:
         pass
 
-    start = stripped.find("{")
-    end = stripped.rfind("}")
-    if start < 0 or end <= start:
-        raise ValueError("no JSON object found")
-    parsed = json_loads_lenient(stripped[start : end + 1])
-    if not isinstance(parsed, dict):
-        raise ValueError("parsed JSON is not an object")
-    return parsed
+    for start, end in balanced_json_object_spans(stripped):
+        try:
+            parsed = json_loads_lenient(stripped[start:end])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(parsed, dict):
+            return parsed
+    raise ValueError("no JSON object found")
+
+
+def balanced_json_object_spans(text: str) -> list[tuple[int, int]]:
+    spans: list[tuple[int, int]] = []
+    start: int | None = None
+    depth = 0
+    in_string = False
+    escaped = False
+
+    for index, char in enumerate(text):
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            if depth == 0:
+                start = index
+            depth += 1
+        elif char == "}" and depth:
+            depth -= 1
+            if depth == 0 and start is not None:
+                spans.append((start, index + 1))
+                start = None
+    return spans
 
 
 def json_loads_lenient(text: str) -> Any:
@@ -216,6 +247,7 @@ def score_candidate(
         "category": metadata.get("category", ""),
         "evidence_regime": metadata.get("evidence_regime", ""),
         "prompt_variant": metadata.get("prompt_variant", ""),
+        "generation_mode": metadata.get("generation_mode", ""),
         "sample_index": metadata.get("sample_index", ""),
         "prior": prior,
         "after": after,
@@ -329,6 +361,7 @@ def main() -> None:
         "category",
         "evidence_regime",
         "prompt_variant",
+        "generation_mode",
         "sample_index",
         "prior",
         "after",

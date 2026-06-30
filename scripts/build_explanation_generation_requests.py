@@ -53,6 +53,58 @@ RELEVANCE_POLICIES: dict[str, str] = {
     ),
 }
 
+GENERATION_MODES = {
+    "freeform",
+    "calibration_diverse",
+}
+
+CALIBRATION_DIVERSE_PROFILES = [
+    {
+        "id": "E1",
+        "name": "evidence-strict/no-update model",
+        "instruction": (
+            "Select evidence only if it directly changes the exact resolution "
+            "criterion. If the packet is indirect, stale, or merely topical, "
+            "stay close to the prior."
+        ),
+    },
+    {
+        "id": "E2",
+        "name": "conservative Bayesian update",
+        "instruction": (
+            "Use relevant evidence but discount weak source quality, indirect "
+            "causal chains, and base-rate uncertainty. Prefer small updates."
+        ),
+    },
+    {
+        "id": "E3",
+        "name": "moderate evidence-weighted update",
+        "instruction": (
+            "Use the strongest visible evidence and make the update a balanced "
+            "market participant would make if the evidence is genuinely relevant."
+        ),
+    },
+    {
+        "id": "E4",
+        "name": "aggressive market-reaction update",
+        "instruction": (
+            "Represent the largest defensible posterior move a trader might make "
+            "if the evidence is interpreted as market-moving. Large updates are "
+            "allowed when the evidence is direct, time-sensitive, or close to the "
+            "resolution criterion."
+        ),
+    },
+    {
+        "id": "E5",
+        "name": "contrarian/noise-or-overreaction model",
+        "instruction": (
+            "Consider whether the visible evidence is already priced, noisy, "
+            "misleading, or likely to trigger market overreaction. This candidate "
+            "may dampen, reverse, or reject the apparent update."
+        ),
+    },
+]
+
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     with path.open(encoding="utf-8") as handle:
@@ -249,6 +301,7 @@ def render_user_prompt(
     prompt_variant: str,
     relevance_policy: str,
     num_explanations: int,
+    generation_mode: str,
 ) -> str:
     prior = float(row.get("before_p") or 0.0)
     variant_instruction = PROMPT_VARIANTS[prompt_variant]
@@ -264,6 +317,35 @@ def render_user_prompt(
     if not description:
         description = "(no additional description provided)"
 
+    if generation_mode == "freeform":
+        generation_task = (
+            f"Generate {num_explanations} mutually distinct candidate explanation/update models linking the visible information to posterior beliefs.\n"
+            "Each candidate should represent a plausible way a disciplined market participant might update from the same prior and evidence.\n"
+            "Diversify candidates by evidence selection, causal mechanism, source skepticism, base-rate use, update magnitude, and possible market overreaction/underreaction.\n"
+            "Flat/no-update is valid when warranted, but do not make all candidates flat unless the visible evidence packet truly gives no plausible market-relevant signal.\n"
+            "Do not average the candidates into one answer before listing them."
+        )
+    elif generation_mode == "calibration_diverse":
+        if num_explanations != len(CALIBRATION_DIVERSE_PROFILES):
+            raise ValueError(
+                "calibration_diverse generation requires num_explanations="
+                f"{len(CALIBRATION_DIVERSE_PROFILES)}"
+            )
+        profile_lines = "\n".join(
+            f"- {profile['id']} ({profile['name']}): {profile['instruction']}"
+            for profile in CALIBRATION_DIVERSE_PROFILES
+        )
+        generation_task = (
+            "Generate exactly five candidate explanation/update models using these fixed profiles:\n"
+            f"{profile_lines}\n\n"
+            "The purpose is posterior-support coverage, not consensus. The candidates should span a wide but defensible range of posterior updates from the same prior and evidence.\n"
+            "When the visible evidence is relevant, at least one candidate should test a materially larger market-style update than a cautious analyst would choose.\n"
+            "When the visible evidence is genuinely irrelevant, all candidates may stay close to the prior, but they should still differ in why they reject the evidence.\n"
+            "Do not average the profiles into one answer before listing them. Keep each candidate faithful to its assigned profile."
+        )
+    else:
+        raise ValueError(f"unknown generation mode: {generation_mode}")
+
     return f"""You are generating candidate explanations for a prediction-market belief update.
 
 Important constraints:
@@ -278,6 +360,9 @@ Relevance policy ({relevance_policy}):
 
 Prompt variant:
 {prompt_variant}: {variant_instruction}
+
+Generation mode:
+{generation_mode}
 
 Market:
 - market_id: {row.get("market_id", "")}
@@ -297,11 +382,7 @@ Visible evidence packet ({evidence_regime}):
 {evidence_json}
 
 Task:
-Generate {num_explanations} mutually distinct candidate explanation/update models linking the visible information to posterior beliefs.
-Each candidate should represent a plausible way a disciplined market participant might update from the same prior and evidence.
-Diversify candidates by evidence selection, causal mechanism, source skepticism, base-rate use, update magnitude, and possible market overreaction/underreaction.
-Flat/no-update is valid when warranted, but do not make all candidates flat unless the visible evidence packet truly gives no plausible market-relevant signal.
-Do not average the candidates into one answer before listing them.
+{generation_task}
 
 Use this exact JSON shape:
 {{
@@ -371,6 +452,7 @@ def build_request(
     relevance_policy: str,
     sample_index: int,
     num_explanations: int,
+    generation_mode: str,
     model: str,
     run_id: str,
 ) -> dict[str, Any] | None:
@@ -402,6 +484,7 @@ def build_request(
                 prompt_variant=prompt_variant,
                 relevance_policy=relevance_policy,
                 num_explanations=num_explanations,
+                generation_mode=generation_mode,
             ),
         },
     ]
@@ -429,6 +512,7 @@ def build_request(
             "evidence_regime": evidence_regime,
             "prompt_variant": prompt_variant,
             "relevance_policy": relevance_policy,
+            "generation_mode": generation_mode,
             "sample_index": sample_index,
             "num_explanations": num_explanations,
             "visible_evidence_ids": [item["candidate_id"] for item in packet],
@@ -461,6 +545,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--samples-per-cell", type=int, default=1)
     parser.add_argument("--num-explanations", type=int, default=1)
+    parser.add_argument(
+        "--generation-mode",
+        default="freeform",
+        choices=sorted(GENERATION_MODES),
+        help="How to specify diversity among generated candidate explanations.",
+    )
     parser.add_argument(
         "--row-buckets",
         nargs="+",
@@ -504,6 +594,7 @@ def main() -> None:
                         relevance_policy=args.relevance_policy,
                         sample_index=sample_index,
                         num_explanations=args.num_explanations,
+                        generation_mode=args.generation_mode,
                         model=args.model,
                         run_id=args.run_id,
                     )
@@ -525,6 +616,7 @@ def main() -> None:
         "evidence_regimes": args.evidence_regimes,
         "prompt_variants": args.prompt_variants,
         "relevance_policy": args.relevance_policy,
+        "generation_mode": args.generation_mode,
         "samples_per_cell": args.samples_per_cell,
         "num_explanations": args.num_explanations,
         "request_count": len(requests),

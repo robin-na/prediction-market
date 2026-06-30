@@ -21,6 +21,13 @@ market explanation project.
 - `no_training_analysis_log.md`: log for the earlier no-training SWM/Kalshi
   source-level analysis.
 
+## Current Feedback Deck
+
+- Google Slides:
+  https://docs.google.com/presentation/d/1e8qWeCNtWWxYjiH-e7tkuS9pWCH0b5-slVoEALCV_lQ/edit
+- Deck playbook:
+  `../skills/market_explanation_feedback_deck/SKILL.md`
+
 ## Reports
 
 - `../reports/explanation_market_proposal/market_for_explanations_proposal.pdf`:
@@ -42,6 +49,9 @@ market explanation project.
   candidate quality.
 - `../reports/explanation_pilot/gemma4_26b_generation_gap_audit_summary_20260629.md`:
   oracle-best candidate-pool audit showing the current generation gap.
+- `../reports/explanation_pilot/gemma4_26b_calibration_diverse_test20_summary_20260629.md`:
+  stress test showing that named update-style prompts did not create useful
+  posterior diversity.
 - `../reports/no_training/attention_is_not_information_no_training.pdf`: earlier
   source-level SWM/Kalshi memo.
 

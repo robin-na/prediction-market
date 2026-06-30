@@ -1,0 +1,12 @@
+{
+  "near_threshold": 0.02,
+  "outputs": {
+    "aggregate": "reports/explanation_pilot/gemma4_26b_generation_gap_caldiv_test20_completions_parser_fixed_20260629_aggregate.csv",
+    "examples": "reports/explanation_pilot/gemma4_26b_generation_gap_caldiv_test20_completions_parser_fixed_20260629_examples.csv",
+    "prompt_level": "reports/explanation_pilot/gemma4_26b_generation_gap_caldiv_test20_completions_parser_fixed_20260629_prompt_level.csv"
+  },
+  "test_input": "data/derived/explanation_pilot/ranking/gemma4_26b_grounded_nonnull_caldiv_test20_completions_valid_ranking_candidates.csv",
+  "test_prompt_count": 16,
+  "train_input": "data/derived/explanation_pilot/ranking/gemma4_26b_grounded_nonnull_train_all_batches_valid_ranking_candidates.csv",
+  "train_prompt_count": 302
+}

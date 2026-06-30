@@ -2321,3 +2321,125 @@ about one quarter of the actual market move. The next generation experiment
 should deliberately ask for calibration-diverse update models and evaluate
 whether the oracle-best generation bound improves before adding a more complex
 selector.
+
+### 2026-06-29 calibration-diverse generation setup
+
+Objective: test whether the generation gap can be reduced by explicitly asking
+Gemma for update models with different calibration policies, rather than asking
+for generic mutually distinct explanations.
+
+Builder update:
+
+```text
+script: scripts/build_explanation_generation_requests.py
+new option: --generation-mode freeform|calibration_diverse
+```
+
+The `calibration_diverse` mode keeps the same JSON output schema as previous
+ensemble runs but fixes the five explanation profiles:
+
+```text
+E1: evidence-strict/no-update model
+E2: conservative Bayesian update
+E3: moderate evidence-weighted update
+E4: aggressive market-reaction update
+E5: contrarian/noise-or-overreaction model
+```
+
+Reason for this design: the generation-gap audit showed that the freeform
+candidate pool rarely bracketed the next market price and typically
+underreacted even when it got the market direction right. The new prompt tests
+whether explicit calibration diversity increases posterior support coverage.
+
+Local test request:
+
+```text
+run_id: gemma4_26b_grounded_nonnull_caldiv_test20_20260629
+request_file: data/derived/explanation_pilot/requests/gemma4_26b_grounded_nonnull_caldiv_test20_20260629_requests.jsonl
+request_count: 20
+rows_source: data/derived/explanation_pilot/kalshi_grounded_nonnull_all_test_fullnews_rows.jsonl
+candidates_source: data/derived/explanation_pilot/kalshi_grounded_nonnull_all_test_fullnews_candidates.jsonl
+evidence_regime: mixed_blind
+prompt_variant: neutral_forecaster
+num_explanations: 5
+generation_mode: calibration_diverse
+```
+
+Leakage check: the model-visible prompts contain none of the hidden evaluation
+fields `after_p`, `after_t`, `price_delta`, `price_direction`, `z_score`,
+`positive_posterior`, `posterior_score`, `prior_score`, `top_posterior`, or
+`top_prior`.
+
+ORCD submission:
+
+```text
+job_id: 16789537
+partition: mit_preemptable
+gres: gpu:a100:1
+time_limit: 02:00:00
+model: google/gemma-4-26B-A4B
+max_model_len: 49152
+max_tokens: 4096
+temperature: 0.6
+concurrency: 1
+remote_dir: /home/robinna/Behavioral_Portability/repo/data/prediction_market/explanation_pilot/gemma4_26b_grounded_nonnull_caldiv_test20_20260629
+status_at_submission_check: PENDING (Priority)
+```
+
+Submission issue and retry:
+
+```text
+job_id: 16789537
+observed_issue: HTTP 400 on /v1/chat/completions
+server_error: ChatTemplateResolutionError; Gemma tokenizer did not define a chat template
+action: canceled requeued job and retried with completion endpoint
+
+retry_job_id: 16790517
+endpoint: completion
+completion_prompt_style: simple
+remote_dir: /home/robinna/Behavioral_Portability/repo/data/prediction_market/explanation_pilot/gemma4_26b_grounded_nonnull_caldiv_test20_completion_20260629
+```
+
+Retry issue and corrected submission:
+
+```text
+retry_job_id: 16790517
+observed_issue: local runner rejected --endpoint completion
+runner_error: invalid choice: 'completion'; expected 'chat' or 'completions'
+action: resubmitted the same requests with endpoint=completions
+
+corrected_job_id: 16790730
+endpoint: completions
+completion_prompt_style: simple
+remote_dir: /home/robinna/Behavioral_Portability/repo/data/prediction_market/explanation_pilot/gemma4_26b_grounded_nonnull_caldiv_test20_completions_20260629
+status_at_submission_check: PENDING (Priority)
+```
+
+Corrected run result:
+
+```text
+corrected_job_id: 16790730
+final_status: COMPLETED
+exit_code: 0:0
+elapsed: 00:11:57
+raw_outputs: 20/20
+local_outputs: data/derived/explanation_pilot/outputs/gemma4_26b_grounded_nonnull_caldiv_test20_completions_20260629_outputs.jsonl
+```
+
+Parser note: completion-mode generations sometimes emitted a valid JSON object
+followed by echoed prompt text. The parser was updated to recover the first
+balanced JSON object. This increased usable calibration-diverse rows from 13 to
+17, with 16 prompts remaining after schema filtering. The same parser fix was
+applied to the previous freeform outputs before comparison.
+
+Main finding: calibration-diverse prompting did not solve the generation gap on
+this stress test. On the 14 valid rows overlapping with the previous freeform
+heldout run, freeform had a helpful oracle candidate on 13/14 rows and never
+collapsed to all-flat, while calibration-diverse had a helpful oracle candidate
+on 3/14 rows and collapsed to all-flat on 10/14 rows.
+
+Summary report:
+
+```text
+reports/explanation_pilot/gemma4_26b_calibration_diverse_test20_summary_20260629.md
+```

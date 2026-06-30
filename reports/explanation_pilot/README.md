@@ -13,7 +13,7 @@ The current empirical picture has two separate bottlenecks:
 2. **Generation gap**: even the post-hoc oracle-best Gemma candidate is often
    too conservative relative to the next market price.
 
-Held-out `test72` headline numbers:
+Freeform held-out `test72` headline numbers:
 
 ```text
 random_expected_top1: 0.248
@@ -23,8 +23,21 @@ oracle_best_candidate_mean_error: 0.140
 target_bracketed_by_candidate_range: 0.000
 ```
 
-The next generation run should explicitly ask for calibration-diverse update
-models before we invest more in complex selector modeling.
+The calibration-diverse stress test did **not** close the generation gap. On
+the 14 overlapping valid rows, the freeform prompt had a helpful oracle
+candidate on 13/14 rows, while the named calibration-profile prompt had a
+helpful candidate on only 3/14 rows and collapsed to all-flat on 10/14 rows.
+
+The next generation run should force distinct market-movement hypotheses, not
+just named update magnitudes:
+
+```text
+visible evidence update
+no-informative-evidence/no-update
+attention or market-microstructure shock
+missing public evidence
+overreaction or reversal
+```
 
 ## Main Summaries
 
@@ -32,6 +45,9 @@ models before we invest more in complex selector modeling.
   baseline audit; corrects the earlier inflated evidence-count heuristic.
 - `gemma4_26b_generation_gap_audit_summary_20260629.md`: oracle-best
   candidate-pool audit showing underreaction and narrow posterior support.
+- `gemma4_26b_calibration_diverse_test20_summary_20260629.md`: stress test
+  showing that named calibration profiles did not create useful posterior
+  diversity.
 - `explanation_ranker_training_note_20260629.md`: supervised selector setup,
   target labels, features, and held-out ranker results.
 - `gemma4_26b_grounded_nonnull_72_summary_20260629.md`: grounded non-null
@@ -62,6 +78,10 @@ Generation-gap audit:
 gemma4_26b_generation_gap_audit_20260629_prompt_level.csv
 gemma4_26b_generation_gap_audit_20260629_aggregate.csv
 gemma4_26b_generation_gap_audit_20260629_examples.csv
+gemma4_26b_generation_gap_parser_fixed_freeform_20260629_prompt_level.csv
+gemma4_26b_generation_gap_parser_fixed_freeform_20260629_aggregate.csv
+gemma4_26b_generation_gap_caldiv_test20_completions_parser_fixed_20260629_prompt_level.csv
+gemma4_26b_generation_gap_caldiv_test20_completions_parser_fixed_20260629_aggregate.csv
 ```
 
 ## Reproduce Local Audits

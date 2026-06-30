@@ -8,6 +8,11 @@ data/
 # Local render/cache outputs
 tmp/
 
+# Superseded local-only audit outputs. Parser-fixed versions are the archived
+# artifacts for this run.
+reports/explanation_pilot/gemma4_26b_generation_gap_caldiv_test20_completions_20260629_*.csv
+reports/explanation_pilot/gemma4_26b_generation_gap_caldiv_test20_completions_20260629_summary.json
+
 # R session artifacts
 .Rhistory
 
